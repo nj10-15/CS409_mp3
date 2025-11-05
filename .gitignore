@@ -8,3 +8,8 @@ node_modules/*
 public/
 public/*
 .env
+
+# Environment
+.env
+*.env
+**/.env
