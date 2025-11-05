@@ -1,15 +1,15 @@
-import User from '../models/User.js';
-import Task from '../models/Task.js';
-import asyncHandler from '../middleware/asyncHandler.js';
-import { buildQuery, applySelectToIdQuery } from '../utils/query.js';
+const User = require('../models/user');
+const Task = require('../models/task');
+const asyncHandler = require('../middleware/asyncHandler');
+const { buildQuery, applySelectToIdQuery } = require('../utils/query');
 
 async function syncUserPendingTasks(userId, pendingIds, userName) {
   const currentAssigned = await Task.find({ assignedUser: userId });
-  const pendingSet = new Set(pendingIds);
+  const pendingSet = new Set(pendingIds.map(String));
 
-  const toUnassign = currentAssigned.filter(t => !pendingSet.has(String(t._id)));
+  const toUnassign = currentAssigned.filter((t) => !pendingSet.has(String(t._id)));
   if (toUnassign.length) {
-    const ids = toUnassign.map(t => t._id);
+    const ids = toUnassign.map((t) => t._id);
     await Task.updateMany(
       { _id: { $in: ids } },
       { $set: { assignedUser: '', assignedUserName: 'unassigned' } }
@@ -18,7 +18,7 @@ async function syncUserPendingTasks(userId, pendingIds, userName) {
 
   if (pendingIds.length) {
     const tasks = await Task.find({ _id: { $in: pendingIds } });
-    const completedOnes = tasks.filter(t => t.completed).map(t => t._id);
+    const completedOnes = tasks.filter((t) => t.completed).map((t) => t._id);
     if (completedOnes.length) {
       const err = new Error('pendingTasks cannot include completed tasks.');
       err.status = 400;
@@ -31,7 +31,7 @@ async function syncUserPendingTasks(userId, pendingIds, userName) {
   }
 }
 
-export const listUsers = asyncHandler(async (req, res) => {
+const listUsers = asyncHandler(async (req, res) => {
   const { q, count } = buildQuery(User, req);
   if (count) {
     const n = await User.countDocuments(q.getQuery());
@@ -41,7 +41,7 @@ export const listUsers = asyncHandler(async (req, res) => {
   res.status(200).json({ message: 'OK', data: docs });
 });
 
-export const createUser = asyncHandler(async (req, res) => {
+const createUser = asyncHandler(async (req, res) => {
   const { name, email, pendingTasks = [] } = req.body || {};
   if (!name || !email) {
     return res.status(400).json({ message: 'Name and email are required.', data: null });
@@ -51,14 +51,14 @@ export const createUser = asyncHandler(async (req, res) => {
   res.status(201).json({ message: 'Created', data: user });
 });
 
-export const getUser = asyncHandler(async (req, res) => {
+const getUser = asyncHandler(async (req, res) => {
   const q = User.findById(req.params.id);
   const doc = await applySelectToIdQuery(q, req).exec();
   if (!doc) return res.status(404).json({ message: 'User not found', data: null });
   res.status(200).json({ message: 'OK', data: doc });
 });
 
-export const replaceUser = asyncHandler(async (req, res) => {
+const replaceUser = asyncHandler(async (req, res) => {
   const id = req.params.id;
   const { name, email, pendingTasks = [] } = req.body || {};
 
@@ -70,7 +70,9 @@ export const replaceUser = asyncHandler(async (req, res) => {
   if (!exists) return res.status(404).json({ message: 'User not found', data: null });
 
   const dup = await User.findOne({ email, _id: { $ne: id } });
-  if (dup) return res.status(400).json({ message: 'A user with that email already exists.', data: null });
+  if (dup) {
+    return res.status(400).json({ message: 'A user with that email already exists.', data: null });
+  }
 
   exists.name = name;
   exists.email = email;
@@ -82,7 +84,7 @@ export const replaceUser = asyncHandler(async (req, res) => {
   res.status(200).json({ message: 'OK', data: exists });
 });
 
-export const deleteUser = asyncHandler(async (req, res) => {
+const deleteUser = asyncHandler(async (req, res) => {
   const id = req.params.id;
   const user = await User.findById(id);
   if (!user) return res.status(404).json({ message: 'User not found', data: null });
@@ -95,3 +97,5 @@ export const deleteUser = asyncHandler(async (req, res) => {
   await user.deleteOne();
   res.status(200).json({ message: 'Deleted', data: null });
 });
+
+module.exports = { listUsers, createUser, getUser, replaceUser, deleteUser };

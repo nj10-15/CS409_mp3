@@ -1,4 +1,4 @@
-export default function errorHandler(err, _req, res, _next) {
+module.exports = function errorHandler(err, _req, res, _next) {
   const isClient =
     err.name === 'ValidationError' ||
     err.name === 'CastError' ||
@@ -14,4 +14,4 @@ export default function errorHandler(err, _req, res, _next) {
   else if (err.status && err.message) msg = err.message;
 
   res.status(status).json({ message: msg, data: null });
-}
+};

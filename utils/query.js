@@ -1,4 +1,4 @@
-export function parseJSONParam(value, fallback = undefined) {
+function parseJSONParam(value, fallback = undefined) {
   if (value === undefined) return fallback;
   try {
     return JSON.parse(value);
@@ -9,7 +9,7 @@ export function parseJSONParam(value, fallback = undefined) {
   }
 }
 
-export function buildQuery(model, req, { defaultLimit } = {}) {
+function buildQuery(model, req, { defaultLimit } = {}) {
   const where = parseJSONParam(req.query.where, {});
   const sort = parseJSONParam(req.query.sort, undefined);
   const select = parseJSONParam(req.query.select, undefined);
@@ -30,7 +30,9 @@ export function buildQuery(model, req, { defaultLimit } = {}) {
   return { q, count, where, sort, select };
 }
 
-export function applySelectToIdQuery(q, req) {
+function applySelectToIdQuery(q, req) {
   const select = parseJSONParam(req.query.select, undefined);
   return select ? q.select(select) : q;
 }
+
+module.exports = { parseJSONParam, buildQuery, applySelectToIdQuery };

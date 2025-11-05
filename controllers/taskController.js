@@ -1,7 +1,7 @@
-import Task from '../models/Task.js';
-import User from '../models/User.js';
-import asyncHandler from '../middleware/asyncHandler.js';
-import { buildQuery, applySelectToIdQuery } from '../utils/query.js';
+const Task = require('../models/task');
+const User = require('../models/user');
+const asyncHandler = require('../middleware/asyncHandler');
+const { buildQuery, applySelectToIdQuery } = require('../utils/query');
 
 /* ---------- helpers to normalize form-urlencoded inputs ---------- */
 function normalizeBool(value, defaultVal = false) {
@@ -16,23 +16,16 @@ function normalizeBool(value, defaultVal = false) {
 // Accepts numbers, numeric strings, scientific notation, seconds or ms
 function normalizeDeadline(value) {
   if (value instanceof Date) return value;
-
-  // Try Number(...) first (handles "1.73e+12" etc.)
   let n = Number(value);
   if (!Number.isNaN(n)) {
-    // If it looks like seconds, convert to ms
     if (n < 1e11) n = n * 1000;
     return new Date(n);
   }
-
-  // Try parseFloat/parseInt fallback
   const f = parseFloat(value);
   if (!Number.isNaN(f)) {
     const ms = f < 1e11 ? f * 1000 : f;
     return new Date(ms);
   }
-
-  // Last resort: let Date parse strings like "2025-11-05"
   const d = new Date(value);
   return d;
 }
@@ -64,7 +57,7 @@ async function syncTaskUserLinks(task) {
 
 /* --------------------- controllers --------------------- */
 
-export const listTasks = asyncHandler(async (req, res) => {
+const listTasks = asyncHandler(async (req, res) => {
   const { q, count } = buildQuery(Task, req, { defaultLimit: 100 });
   if (count) {
     const n = await Task.countDocuments(q.getQuery());
@@ -74,7 +67,7 @@ export const listTasks = asyncHandler(async (req, res) => {
   res.status(200).json({ message: 'OK', data: docs });
 });
 
-export const createTask = asyncHandler(async (req, res) => {
+const createTask = asyncHandler(async (req, res) => {
   let {
     name,
     description = '',
@@ -85,23 +78,24 @@ export const createTask = asyncHandler(async (req, res) => {
   } = req.body || {};
 
   if (!name || deadline === undefined) {
-    return res.status(400).json({ message: 'Task name and deadline are required.', data: null });
+    return res
+      .status(400)
+      .json({ message: 'Task name and deadline are required.', data: null });
   }
 
-  // Normalize inputs from x-www-form-urlencoded
   const deadlineDate = normalizeDeadline(deadline);
   const completedBool = normalizeBool(completed, false);
-
   if (isNaN(deadlineDate.getTime())) {
     return res.status(400).json({ message: 'Invalid deadline.', data: null });
   }
 
-  // Validate assigned user if provided
   let realAssignedName = assignedUserName;
   if (assignedUser) {
     const u = await User.findById(assignedUser);
     if (!u) {
-      return res.status(400).json({ message: 'Assigned user does not exist.', data: null });
+      return res
+        .status(400)
+        .json({ message: 'Assigned user does not exist.', data: null });
     }
     realAssignedName = u.name;
   }
@@ -116,18 +110,17 @@ export const createTask = asyncHandler(async (req, res) => {
   });
 
   await syncTaskUserLinks(task);
-
   res.status(201).json({ message: 'Created', data: task });
 });
 
-export const getTask = asyncHandler(async (req, res) => {
+const getTask = asyncHandler(async (req, res) => {
   const q = Task.findById(req.params.id);
   const doc = await applySelectToIdQuery(q, req).exec();
   if (!doc) return res.status(404).json({ message: 'Task not found', data: null });
   res.status(200).json({ message: 'OK', data: doc });
 });
 
-export const replaceTask = asyncHandler(async (req, res) => {
+const replaceTask = asyncHandler(async (req, res) => {
   const id = req.params.id;
   let {
     name,
@@ -139,7 +132,9 @@ export const replaceTask = asyncHandler(async (req, res) => {
   } = req.body || {};
 
   if (!name || deadline === undefined) {
-    return res.status(400).json({ message: 'Task name and deadline are required.', data: null });
+    return res
+      .status(400)
+      .json({ message: 'Task name and deadline are required.', data: null });
   }
 
   const existing = await Task.findById(id);
@@ -149,10 +144,8 @@ export const replaceTask = asyncHandler(async (req, res) => {
     await removeFromUserPending(existing);
   }
 
-  // Normalize inputs
   const deadlineDate = normalizeDeadline(deadline);
   const completedBool = normalizeBool(completed, false);
-
   if (isNaN(deadlineDate.getTime())) {
     return res.status(400).json({ message: 'Invalid deadline.', data: null });
   }
@@ -161,7 +154,9 @@ export const replaceTask = asyncHandler(async (req, res) => {
   if (assignedUser) {
     const u = await User.findById(assignedUser);
     if (!u) {
-      return res.status(400).json({ message: 'Assigned user does not exist.', data: null });
+      return res
+        .status(400)
+        .json({ message: 'Assigned user does not exist.', data: null });
     }
     realAssignedName = u.name;
   }
@@ -179,7 +174,7 @@ export const replaceTask = asyncHandler(async (req, res) => {
   res.status(200).json({ message: 'OK', data: existing });
 });
 
-export const deleteTask = asyncHandler(async (req, res) => {
+const deleteTask = asyncHandler(async (req, res) => {
   const id = req.params.id;
   const task = await Task.findById(id);
   if (!task) return res.status(404).json({ message: 'Task not found', data: null });
@@ -189,3 +184,5 @@ export const deleteTask = asyncHandler(async (req, res) => {
 
   res.status(200).json({ message: 'Deleted', data: null });
 });
+
+module.exports = { listTasks, createTask, getTask, replaceTask, deleteTask };
