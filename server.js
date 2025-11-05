@@ -31,6 +31,21 @@ app.use(bodyParser.urlencoded({
 }));
 app.use(bodyParser.json());
 
+app.get('/debug/db', async (_req, res) => {
+  try {
+    const name = mongoose.connection.name;           // db name in use
+    const host = mongoose.connection.host;           // atlas host
+    const users = await mongoose.connection.db.collection('users').countDocuments();
+    const tasks = await mongoose.connection.db.collection('tasks').countDocuments();
+    res.status(200).json({
+      message: 'OK',
+      data: { host, db: name, counts: { users, tasks } }
+    });
+  } catch (e) {
+    res.status(500).json({ message: e.message, data: null });
+  }
+});
+
 // Use routes as a module (see index.js)
 require('./routes')(app, router);
 
