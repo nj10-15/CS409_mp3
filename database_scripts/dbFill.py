@@ -84,7 +84,14 @@ def main(argv):
         # Pick a random first name and last name
         x = randint(0,99)
         y = randint(0,99)
+<<<<<<< HEAD
         params = urllib.parse.urlencode({'name': firstNames[x] + " " + lastNames[y], 'email': firstNames[x] + "@" + lastNames[y] + ".com"})
+=======
+        # params = urllib.parse.urlencode({'name': firstNames[x] + " " + lastNames[y], 'email': firstNames[x] + "@" + lastNames[y] + ".com"})
+        unique_email = f"{firstNames[x]}{lastNames[y]}{i}{randint(1000,999999)}@example.com"
+        params = urllib.parse.urlencode({'name': f"{firstNames[x]} {lastNames[y]}", 'email': unique_email})
+
+>>>>>>> 30e8153 (Updating mp3 changes)
 
         # POST the user
         conn.request("POST", "/api/users", params, headers)
