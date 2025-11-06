@@ -3,7 +3,7 @@ const User = require('../models/user');
 const asyncHandler = require('../middleware/asyncHandler');
 const { buildQuery, applySelectToIdQuery } = require('../utils/query');
 
-/* ---------- helpers to normalize form-urlencoded inputs ---------- */
+//helpers to normalize form-urlencoded inputs
 function normalizeBool(value, defaultVal = false) {
   if (typeof value === 'boolean') return value;
   if (value === undefined || value === null) return defaultVal;
@@ -55,8 +55,7 @@ async function syncTaskUserLinks(task) {
   }
 }
 
-/* --------------------- controllers --------------------- */
-
+//controllers
 const listTasks = asyncHandler(async (req, res) => {
   const { q, count } = buildQuery(Task, req, { defaultLimit: 100 });
   if (count) {
